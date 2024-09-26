@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Text</title>
+    <style>
+        #chat {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .user {
+            font-weight: bold;
+        }
+        .response {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Send Text to API</h1>
+    <div id="chat"></div>
+    <form id="textForm">
+        <label for="textInput">Enter text:</label>
+        <input type="text" id="textInput" name="textInput" required>
+        <button type="submit">Send</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatDiv = document.getElementById('chat');
+            let websocket;
+
+            function connectWebSocket() {
+                websocket = new WebSocket('ws://' + window.location.host + '/ws');
+
+                websocket.onopen = function(event) {
+                    console.log('WebSocket is open now.');
+                };
+
+                websocket.onmessage = function(event) {
+                    const data = event.data;
+
+                    if (data.startsWith("Error:")) {
+                        // Display error message
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'message response';
+                        errorDiv.innerHTML = `<div class="user">Error:</div> ${data}`;
+                        chatDiv.appendChild(errorDiv);
+                    } else {
+                        // Display assistant response
+                        const lastMessage = chatDiv.lastElementChild;
+                        if (lastMessage && lastMessage.classList.contains('response')) {
+                            // If the last message is a response, update its text
+                            lastMessage.innerHTML += data; // Append data to the existing response
+                        } else {
+                            // Otherwise, create a new response message
+                            const responseDiv = document.createElement('div');
+                            responseDiv.className = 'message response';
+                            responseDiv.innerHTML = `<div class="user">Assistant:</div> ${data}`;
+                            chatDiv.appendChild(responseDiv);
+                        }
+                    }
+
+                    // Scroll to the bottom of the chat
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
+                };
+
+                websocket.onclose = function(event) {
+                    console.log('WebSocket is closed now.');
+                };
+
+                websocket.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
+            }
+
+            connectWebSocket();
+
+            document.getElementById('textForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const textInput = document.getElementById('textInput').value;
+
+                // Display user message
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.innerHTML = `<div class="user">User:</div> ${textInput}`;
+                chatDiv.appendChild(messageDiv);
+
+                // Send message to WebSocket
+                websocket.send(textInput);
+
+                // Clear input field
+                document.getElementById('textInput').value = '';
+            });
+        });
+    </script>
+</body>
+</html>
