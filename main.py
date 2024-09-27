@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from pydantic import BaseModel
 import uvicorn
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from mistral import chat_ai
+from mistral import get_mistral_client
 
 app = FastAPI()
 
@@ -30,16 +30,17 @@ async def read_root(request: Request):
 
 
 @app.websocket('/ws')
-async def fetch_data(websocket: WebSocket):
+async def fetch_data(
+        websocket: WebSocket,
+        client=Depends(get_mistral_client),
+):
     await websocket.accept()
     try:
         while True:
             text = await websocket.receive_text()
 
-            async for chunk in await chat_ai(text):
-                response = chunk.data.choices[0].delta.content
-
-                await websocket.send_text(response)
+            async for chunk in client.chat_ai(text):
+                await websocket.send_text(chunk)
     except WebSocketDisconnect:
         pass
 
@@ -48,5 +49,5 @@ if __name__ == "__main__":
     uvicorn.run(
         'main:app',
         host='0.0.0.0',
-        port=8000,
+        port=8882,
     )
