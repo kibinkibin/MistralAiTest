@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Depends
 from pydantic import BaseModel
 import uvicorn
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from mistral import get_mistral_client
+from src.service.mistral import get_mistral_client
 
 app = FastAPI()
 
